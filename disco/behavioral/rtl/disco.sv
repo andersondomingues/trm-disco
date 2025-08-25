@@ -1,9 +1,8 @@
 import disco::*;
 
 `define FILENAME "program.txt"
-`define MEM_SIZE 1024
 
-module disco_behavioural ()(
+module disco_behavioural #(parameter MEM_SIZE = 1024)(
     input logic clock,
     input logic reset,
 );
@@ -70,15 +69,34 @@ always @(posedge clock) begin
                 unique case(op2)
                     BLT: pc = (r[ra] < 0) ? imm : pc + 2;
                     BGE: pc = (r[ra] >= 0) ? imm : pc + 2;
-                    BBL: pc = (r[ra] < 0) ? imm : pc + 2;
-                    BAE: pc = (r[ra] >= 0) ? imm : pc + 2;
+                    BBL: pc = (r[ra] & {1b'0, 15{1'b1}} < 0) ? imm : pc + 2;
+                    BAE: pc = (r[ra] & {1b'0, 15{1'b1}} >= 0) ? imm : pc + 2;
                     BEQ: pc = (r[ra] == 0) ? imm : pc + 2;
                     BNE: pc = (r[ra] != 0) ? imm : pc + 2;
                 endcase
             end
         end
-        OP_EXTRA : begin
-            
+        OP_TEST : begin
+            if(~I) begin
+                unique case(op2)
+                    TLT: r[ra] = (r[ra] < r[rb]) ? 1b'1 : 1b'0;
+                    TGE: r[ra] = (r[ra] >= r[rb]) ? 1b'1 : 1b'0;
+                    TBL: r[ra] = (r[ra] < r[rb]) ? 1b'1 : 1b'0;   // unsigned
+                    TAE: r[ra] = (r[ra] >= r[rb]) ? 1b'1 : 1b'0;  // unsigned 
+                    TEQ: r[ra] = (r[ra] == r[rb]) ? 1b'1 : 1b'0;
+                    TNE: r[ra] = (r[ra] != r[rb]) ? 1b'1 : 1b'0;
+                endcase
+            end else begin
+                unique case(op2)
+                    TLT: r[ra] = (r[ra] < imm) ? 1b'1 : 1b'0;
+                    TGE: r[ra] = (r[ra] >= imm) ? 1b'1 : 1b'0;
+                    TBL: r[ra] = (r[ra] < imm) ? 1b'1 : 1b'0;   // unsigned
+                    TAE: r[ra] = (r[ra] >= imm) ? 1b'1 : 1b'0;  // unsigned 
+                    TEQ: r[ra] = (r[ra] == imm) ? 1b'1 : 1b'0;
+                    TNE: r[ra] = (r[ra] != imm) ? 1b'1 : 1b'0;
+                endcase
+            end
+            pc = pc + 2;
         end
         OP_LOAD_STORE : begin
             
@@ -99,7 +117,7 @@ always @(posedge clock) begin
             end
             pc = pc + 2;
         end
-        OP_TEST : begin
+        OP_EXTRA : begin
             if(op2 == HLT) $finish;
         end
         default : $display("Ignored unknown instruction ", op1, op2);

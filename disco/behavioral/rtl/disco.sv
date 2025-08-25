@@ -99,7 +99,25 @@ always @(posedge clock) begin
             pc = pc + 2;
         end
         OP_LOAD_STORE : begin
-            
+            if(~I) begin
+                unique case(op2)
+                    LDW: r[ra] = mem[rb];
+                    LDB: r[ra] = mem[rb];
+                    LBU: r[ra] = mem[rb];
+                    STW: mem[rb] = r[ra];
+                    STB: mem[rb] = r[ra];
+                endcase
+            end else begin
+                unique case(op2)
+                    LDW: r[ra] = mem[rb + imm];
+                    LDB: r[ra] = mem[rb + imm];
+                    LBU: r[ra] = mem[rb + imm];
+                    STW: mem[rb] = r[ra + imm];
+                    STB: mem[rb] = r[ra + imm];
+                endcase
+            end
+            pc = pc + 2;
+
         end
         OP_SHIFT : begin
             if(~I) begin
